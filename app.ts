@@ -11,6 +11,9 @@ app.use(express.json());
 app.use(express.static("public"));
 app.use(express.urlencoded({ extended: true }));
 
+/*
+GET /api/comments - Get all comments
+*/
 app.get(
   "/api/comments",
   async (_req: express.Request, res: express.Response) => {
@@ -19,6 +22,9 @@ app.get(
   }
 );
 
+/*
+POST /api/comments - Create a new comment
+*/
 app.post(
   "/api/comments",
   async (req: express.Request, res: express.Response) => {
@@ -29,7 +35,7 @@ app.post(
       typeof avatarURL !== "string" ||
       typeof content !== "string"
     ) {
-      return res.status(400).send("Bad request");
+      return res.status(301).redirect("/?error=bad-request");
     }
     try {
       const comment = await db.comment.create({
@@ -40,14 +46,17 @@ app.post(
         },
       });
       console.log(`New comment with id: ${comment.id}`);
-      res.send(comment);
+      res.status(301).redirect("/");
     } catch (e) {
       console.error(e);
-      res.status(500).send("Internal server error");
+      res.status(500).redirect("/?error=internal");
     }
   }
 );
 
+/*
+POST /api/comments/:id - Upvote a comment
+*/
 app.post(
   "/api/comments/:id",
   async (req: express.Request, res: express.Response) => {
@@ -64,13 +73,17 @@ app.post(
         },
       });
       console.log(`Comment with id: ${updatedComment.id} has been upvoted`);
-      res.send(updatedComment);
+      res.status(301).redirect("/");
     } catch (e) {
-      res.status(500).send("Internal server error");
+      console.error(e);
+      res.status(500).redirect("/?error=internal");
     }
   }
 );
 
+/*
+DELETE /api/comments/:id - Delete a comment for testing purposes
+*/
 app.delete(
   "/api/comments/:id",
   async (req: express.Request, res: express.Response) => {
@@ -84,6 +97,7 @@ app.delete(
       console.log(`Comment with id: ${id} has been deleted`);
       res.send();
     } catch (e) {
+      console.error(e);
       res.status(501).send("Internal server error");
     }
   }
