@@ -61,6 +61,10 @@ app.post(
   "/api/comments/:id",
   async (req: express.Request, res: express.Response) => {
     const { id } = req.params;
+    const { upvoted } = req.body;
+    if (typeof upvoted !== "boolean") {
+      return res.status(400).send("Bad request");
+    }
     try {
       const updatedComment = await db.comment.update({
         where: {
@@ -68,15 +72,15 @@ app.post(
         },
         data: {
           upvotes: {
-            increment: 1,
+            increment: upvoted ? -1 : 1,
           },
         },
       });
       console.log(`Comment with id: ${updatedComment.id} has been upvoted`);
-      res.status(301).redirect("/");
+      res.send(updatedComment);
     } catch (e) {
       console.error(e);
-      res.status(500).redirect("/?error=internal");
+      res.status(501).send("Internal server error");
     }
   }
 );

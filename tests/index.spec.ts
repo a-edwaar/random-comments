@@ -9,8 +9,9 @@ test.beforeEach(async ({ page }) => {
 });
 
 test.afterEach(async ({ page, request, browserName }, testInfo) => {
+  const content = `${testInfo.title}-${browserName}`;
   const commentToDelete = await page
-    .locator(`article:has-text("${testInfo.title}-${browserName}")`)
+    .locator(`article:has-text("${content}")`)
     .getAttribute("data-commentid");
   const resp = await request.delete(`/api/comments/${commentToDelete}`);
   expect(resp.ok()).toBeTruthy();
@@ -22,15 +23,14 @@ test.describe("Comment", () => {
       .locator('#comment-form input[name="name"]')
       .inputValue();
 
-    await page.fill("#content", `${testInfo.title}-${browserName}`);
+    const content = `${testInfo.title}-${browserName}`;
+    await page.fill("#content", `${content}`);
     await Promise.all([
       page.waitForResponse("/api/comments"),
       page.locator("#comment-form button").click(),
     ]);
 
-    const comment = page.locator(
-      `article:has-text("${testInfo.title}-${browserName}")`
-    );
+    const comment = page.locator(`article:has-text("${content}")`);
     await expect(comment).toHaveCount(1);
     await expect(comment.locator("h2")).toContainText(name);
     expect(Number(await comment.locator("span.upvotes").innerText())).toBe(0);
@@ -39,7 +39,8 @@ test.describe("Comment", () => {
 
 test.describe("Upvote", () => {
   test.beforeEach(async ({ page, browserName }, testInfo) => {
-    await page.fill("#content", `${testInfo.title}-${browserName}`);
+    const content = `${testInfo.title}-${browserName}`;
+    await page.fill("#content", `${content}`);
     await Promise.all([
       page.waitForResponse("/api/comments"),
       page.locator("#comment-form button").click(),
@@ -50,17 +51,42 @@ test.describe("Upvote", () => {
     page,
     browserName,
   }, testInfo) => {
-    const comment = page.locator(
-      `article:has-text("${testInfo.title}-${browserName}")`
-    );
+    const content = `${testInfo.title}-${browserName}`;
+    const comment = page.locator(`article:has-text("${content}")`);
+    const commentId = await comment.getAttribute("data-commentid");
     await expect(comment).toHaveCount(1);
     expect(Number(await comment.locator("span.upvotes").innerText())).toBe(0);
 
     await Promise.all([
-      page.waitForResponse("/api/comments"),
-      await comment.locator(`button`).click(),
+      page.waitForResponse(`/api/comments/${commentId}`),
+      comment.locator(`button`).click(),
     ]);
 
     expect(Number(await comment.locator("span.upvotes").innerText())).toBe(1);
+  });
+
+  test("should remove upvote for comment", async ({
+    page,
+    browserName,
+  }, testInfo) => {
+    const content = `${testInfo.title}-${browserName}`;
+    const comment = page.locator(`article:has-text("${content}")`);
+    const commentId = await comment.getAttribute("data-commentid");
+    await expect(comment).toHaveCount(1);
+    expect(Number(await comment.locator("span.upvotes").innerText())).toBe(0);
+
+    await Promise.all([
+      page.waitForResponse(`/api/comments/${commentId}`),
+      comment.locator(`button`).click(),
+    ]);
+
+    expect(Number(await comment.locator("span.upvotes").innerText())).toBe(1);
+
+    await Promise.all([
+      page.waitForResponse(`/api/comments/${commentId}`),
+      comment.locator(`button`).click(),
+    ]);
+
+    expect(Number(await comment.locator("span.upvotes").innerText())).toBe(0);
   });
 });

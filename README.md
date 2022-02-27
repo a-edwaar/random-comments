@@ -7,7 +7,7 @@ Comments system built with Express. Code is live [here](https://random-comments-
 - Express server which hosts an index.html file and API routes
 - A PostgreSQL DB hosted in the cloud with Supabase
 - Server and tests written in typescript
-- Frontend uses Vanilla JS
+- Frontend uses Vanilla JS and ReactJS (for upvotes)
 - Frontend styled with Tailwind CSS
 
 ### Run locally
