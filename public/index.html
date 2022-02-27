@@ -33,6 +33,7 @@
             <img class="hidden mr-3 h-9 w-9 rounded-full" />
             <input
               type="text"
+              id="content"
               name="content"
               placeholder="What are your thoughts?"
               class="flex-grow py-2 px-3 font-medium border-[1px] border-[#E5E5E5] rounded-[4px] placeholder-[#8A8F9C]"
@@ -95,7 +96,7 @@
     comments.map(function (comment) {
       document.querySelector("#comments").insertAdjacentHTML(
         "beforeend",
-        `<article class="ml-4 flex items-start">
+        `<article data-commentid="${comment.id}" class="ml-4 flex items-start">
           <img src="${
             comment.avatarURL
               ? comment.avatarURL
@@ -103,9 +104,9 @@
           }" class="h-9 w-9 rounded-full" style="transform: translate(calc(-50%), var(--tw-translate-y));"/>
           <div class="-ml-1">
             <div class="flex items-center space-x-2">
-              <span class="text-sm font-semibold">${
+              <h2 class="text-sm font-semibold">${
                 comment.name ? comment.name : "Anonymous"
-              }</span>
+              }</h2>
               <span class="text-xs text-[#4B587C]">
                 &bull;
               </span>
@@ -122,7 +123,7 @@
               <form action="/api/comments/${comment.id}" method="POST">
                 <button class="flex items-center hover:text-black">
                   <span class="text-[8px]">▲</span>
-                  <span class="ml-2">${
+                  <span class="upvotes ml-2">${
                     comment.upvotes ? comment.upvotes : 0
                   }</span>
                   <span class="ml-1">Upvotes<span>
