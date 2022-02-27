@@ -6,6 +6,13 @@ const Upvote = ({ id, commentUpvotes }) => {
   const [upvotes, setUpvotes] = React.useState(commentUpvotes);
   const [upvoted, setUpvoted] = React.useState(false);
 
+  React.useEffect(() => {
+    document.body.addEventListener(`comment-${id}`, ({ detail }) => {
+      const { upvotes: newUpvotes } = detail;
+      setUpvotes(parseInt(newUpvotes, 10));
+    });
+  }, []);
+
   const onFormSubmit = (e) => {
     e.preventDefault();
     fetch(`/api/comments/${id}`, {
@@ -25,10 +32,11 @@ const Upvote = ({ id, commentUpvotes }) => {
       })
       .then((data) => {
         const { upvotes: newUpvotes } = data;
-        setUpvotes(newUpvotes);
+        setUpvotes(newUpvotes); // optimistic update
         setUpvoted(!upvoted);
       })
-      .catch((_e) => {
+      .catch((e) => {
+        console.error(e);
         document.querySelector("#error-message").classList.remove("hidden");
       });
   };

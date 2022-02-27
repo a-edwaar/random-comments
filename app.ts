@@ -1,7 +1,11 @@
 import express from "express";
 import { PrismaClient } from "@prisma/client";
+import http from "http";
+import { Server } from "socket.io";
 
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server);
 const db = new PrismaClient();
 const port = 3000;
 
@@ -29,7 +33,6 @@ app.post(
   "/api/comments",
   async (req: express.Request, res: express.Response) => {
     const { name, avatarURL, content } = req.body;
-    console.log(name, avatarURL, content);
     if (
       typeof name !== "string" ||
       typeof avatarURL !== "string" ||
@@ -77,6 +80,7 @@ app.post(
         },
       });
       console.log(`Comment with id: ${updatedComment.id} has been upvoted`);
+      io.emit("upvote", updatedComment);
       res.send(updatedComment);
     } catch (e) {
       console.error(e);
@@ -107,6 +111,14 @@ app.delete(
   }
 );
 
-app.listen(port, () => {
+io.on("connection", (socket) => {
+  console.log("client connected");
+
+  socket.on("disconnect", () => {
+    console.log("client disconnected");
+  });
+});
+
+server.listen(port, () => {
   console.log(`Server is running on port ${port}.`);
 });

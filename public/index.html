@@ -50,11 +50,22 @@
       </div>
     </div>
 
+    <script src="/socket.io/socket.io.js"></script>
+
     <script>
+      var socket = io();
+
       window.addEventListener("DOMContentLoaded", () => {
         generateFakeProfile();
         checkForErrors();
         fetchComments();
+      });
+
+      socket.on("upvote", function (comment) {
+        const event = new CustomEvent(`comment-${comment.id}`, {
+          detail: comment,
+        });
+        document.body.dispatchEvent(event);
       });
 
       const generateFakeProfile = async () => {
@@ -87,17 +98,18 @@
       };
 
       const fetchComments = async () => {
-        const response = await fetch("/api/comments");
-        if (response.status !== 200) {
-          throw Error(response.statusText);
-        }
-        const comments = await response.json();
-        comments.map(function (comment) {
-          document.querySelector("#comments").insertAdjacentHTML(
-            "beforeend",
-            `<article data-commentid="${
-              comment.id
-            }" class="ml-4 flex items-start">
+        try {
+          const response = await fetch("/api/comments");
+          if (response.status !== 200) {
+            throw Error(response.statusText);
+          }
+          const comments = await response.json();
+          comments.map(function (comment) {
+            document.querySelector("#comments").insertAdjacentHTML(
+              "beforeend",
+              `<article data-commentid="${
+                comment.id
+              }" class="ml-4 flex items-start">
               <img src="${
                 comment.avatarURL
                   ? comment.avatarURL
@@ -128,11 +140,15 @@
                 </div>
               </div>
             </article>`
-          );
-        });
+            );
+          });
 
-        const event = new CustomEvent("renderedComments", {});
-        document.querySelector("#comments").dispatchEvent(event);
+          const event = new CustomEvent("renderedComments", {});
+          document.querySelector("#comments").dispatchEvent(event);
+        } catch (e) {
+          console.error(e);
+          document.querySelector("#error-message").classList.remove("hidden");
+        }
       };
     </script>
 

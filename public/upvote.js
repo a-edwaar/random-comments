@@ -18,6 +18,15 @@ var Upvote = function Upvote(_ref) {
       upvoted = _React$useState4[0],
       setUpvoted = _React$useState4[1];
 
+  React.useEffect(function () {
+    document.body.addEventListener("comment-" + id, function (_ref2) {
+      var detail = _ref2.detail;
+      var newUpvotes = detail.upvotes;
+
+      setUpvotes(parseInt(newUpvotes, 10));
+    });
+  }, []);
+
   var onFormSubmit = function onFormSubmit(e) {
     e.preventDefault();
     fetch("/api/comments/" + id, {
@@ -38,7 +47,8 @@ var Upvote = function Upvote(_ref) {
 
       setUpvotes(newUpvotes);
       setUpvoted(!upvoted);
-    }).catch(function (_e) {
+    }).catch(function (e) {
+      console.error(e);
       document.querySelector("#error-message").classList.remove("hidden");
     });
   };

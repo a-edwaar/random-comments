@@ -89,4 +89,46 @@ test.describe("Upvote", () => {
 
     expect(Number(await comment.locator("span.upvotes").innerText())).toBe(0);
   });
+
+  test("should show live upvotes across windows", async ({
+    page,
+    browserName,
+    context,
+  }, testInfo) => {
+    const pageTwo = await context.newPage();
+    await Promise.all([
+      pageTwo.waitForResponse("/api/comments"),
+      pageTwo.goto("/"),
+    ]);
+
+    const content = `${testInfo.title}-${browserName}`;
+    const comment = page.locator(`article:has-text("${content}")`);
+    const commentId = await comment.getAttribute("data-commentid");
+    const commentTwo = pageTwo.locator(`article:has-text("${content}")`);
+
+    expect(Number(await comment.locator("span.upvotes").innerText())).toBe(0);
+    expect(Number(await commentTwo.locator("span.upvotes").innerText())).toBe(
+      0
+    );
+
+    await Promise.all([
+      page.waitForResponse(`/api/comments/${commentId}`),
+      comment.locator(`button`).click(),
+    ]);
+
+    expect(Number(await comment.locator("span.upvotes").innerText())).toBe(1);
+    expect(Number(await commentTwo.locator("span.upvotes").innerText())).toBe(
+      1
+    );
+
+    await Promise.all([
+      page.waitForResponse(`/api/comments/${commentId}`),
+      comment.locator(`button`).click(),
+    ]);
+
+    expect(Number(await comment.locator("span.upvotes").innerText())).toBe(0);
+    expect(Number(await commentTwo.locator("span.upvotes").innerText())).toBe(
+      0
+    );
+  });
 });
