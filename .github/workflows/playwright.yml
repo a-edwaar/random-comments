@@ -8,6 +8,10 @@ jobs:
   test:
     timeout-minutes: 60
     runs-on: ubuntu-latest
+    environment: Playwright
+    env:
+      BASE_URL: ${{ secrets.BASE_URL }}
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v2
@@ -19,8 +23,6 @@ jobs:
         run: npx playwright install --with-deps
       - name: Run Playwright tests
         run: npx playwright test
-        env:
-          BASE_URL: "https://random-comments-k3usw.ondigitalocean.app/"
       - uses: actions/upload-artifact@v2
         if: always()
         with:

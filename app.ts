@@ -1,7 +1,11 @@
 import express from "express";
 import { PrismaClient } from "@prisma/client";
+import http from "http";
+import { Server } from "socket.io";
 
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server);
 const db = new PrismaClient();
 const port = 3000;
 
@@ -17,7 +21,14 @@ GET /api/comments - Get all comments
 app.get(
   "/api/comments",
   async (_req: express.Request, res: express.Response) => {
-    const comments = await db.comment.findMany();
+    const comments = await db.comment.findMany({
+      where: {
+        parentId: null,
+      },
+      include: {
+        replies: true,
+      },
+    });
     res.send(comments);
   }
 );
@@ -28,8 +39,7 @@ POST /api/comments - Create a new comment
 app.post(
   "/api/comments",
   async (req: express.Request, res: express.Response) => {
-    const { name, avatarURL, content } = req.body;
-    console.log(name, avatarURL, content);
+    const { name, avatarURL, content, parentId } = req.body;
     if (
       typeof name !== "string" ||
       typeof avatarURL !== "string" ||
@@ -43,6 +53,7 @@ app.post(
           name,
           avatarURL,
           content,
+          parentId,
         },
       });
       console.log(`New comment with id: ${comment.id}`);
@@ -61,6 +72,10 @@ app.post(
   "/api/comments/:id",
   async (req: express.Request, res: express.Response) => {
     const { id } = req.params;
+    const { upvoted } = req.body;
+    if (typeof upvoted !== "boolean") {
+      return res.status(400).send("Bad request");
+    }
     try {
       const updatedComment = await db.comment.update({
         where: {
@@ -68,15 +83,16 @@ app.post(
         },
         data: {
           upvotes: {
-            increment: 1,
+            increment: upvoted ? -1 : 1,
           },
         },
       });
       console.log(`Comment with id: ${updatedComment.id} has been upvoted`);
-      res.status(301).redirect("/");
+      io.emit("upvote", updatedComment);
+      res.send(updatedComment);
     } catch (e) {
       console.error(e);
-      res.status(500).redirect("/?error=internal");
+      res.status(501).send("Internal server error");
     }
   }
 );
@@ -103,6 +119,14 @@ app.delete(
   }
 );
 
-app.listen(port, () => {
+io.on("connection", (socket) => {
+  console.log("client connected");
+
+  socket.on("disconnect", () => {
+    console.log("client disconnected");
+  });
+});
+
+server.listen(port, () => {
   console.log(`Server is running on port ${port}.`);
 });

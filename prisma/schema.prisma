@@ -11,10 +11,13 @@ datasource db {
 }
 
 model Comment {
-  id        String   @id @default(uuid())
-  createdAt DateTime @default(now())
+  id        String    @id @default(uuid())
+  createdAt DateTime  @default(now())
   name      String
   avatarURL String
   content   String
-  upvotes   Int      @default(0)
+  upvotes   Int       @default(0)
+  parentId  String?
+  parent    Comment?  @relation("CommentToComment", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   Comment[] @relation("CommentToComment")
 }
