@@ -29,12 +29,13 @@
             value="https://www.gravatar.com/avatar/?d=mp"
           />
 
-          <div class="flex items-center pt-8 pb-11 text-xs">
+          <div class="flex items-center mt-8 mb-11 text-xs">
             <img class="hidden mr-3 h-9 w-9 rounded-full" />
             <input
               type="text"
               id="content"
               name="content"
+              required
               placeholder="What are your thoughts?"
               class="flex-grow py-2 px-3 font-medium border-[1px] border-[#E5E5E5] rounded-[4px] placeholder-[#8A8F9C]"
             />
@@ -54,6 +55,8 @@
 
     <script>
       var socket = io();
+      var fakeName = "Bob Dylan";
+      var fakePhoto = "https://www.gravatar.com/avatar/?d=mp";
 
       window.addEventListener("DOMContentLoaded", () => {
         generateFakeProfile();
@@ -85,6 +88,10 @@
         const image = document.querySelector("#comment-form img");
         image.classList.remove("hidden");
         image.src = picture.medium;
+
+        // save profile details for reply form
+        fakeName = `${name.first} ${name.last}`;
+        fakePhoto = picture.medium;
       };
 
       const checkForErrors = () => {
@@ -105,42 +112,9 @@
           }
           const comments = await response.json();
           comments.map(function (comment) {
-            document.querySelector("#comments").insertAdjacentHTML(
-              "beforeend",
-              `<article data-commentid="${
-                comment.id
-              }" class="ml-4 flex items-start">
-              <img src="${
-                comment.avatarURL
-                  ? comment.avatarURL
-                  : "https://www.gravatar.com/avatar/?d=mp"
-              }" class="h-9 w-9 rounded-full" style="transform: translate(calc(-50%), var(--tw-translate-y));"/>
-              <div class="-ml-1">
-                <div class="flex items-center space-x-2">
-                  <h2 class="text-sm font-semibold">${
-                    comment.name ? comment.name : "Anonymous"
-                  }</h2>
-                  <span class="text-xs text-[#4B587C]">
-                    &bull;
-                  </span>
-                  <span class="text-xs text-[#4B587C]">${
-                    comment.createdAt
-                      ? moment(comment.createdAt).fromNow()
-                      : "Unknown time"
-                  }</span>
-                </div>
-                <p class="mt-1 text-sm">${
-                  comment.content ? comment.content : "Nothing to see here 👀"
-                }</p>
-                <div class="mt-4 flex items-center font-semibold text-xs text-[#4B587C]">
-                  <div class="upvotes-container" data-commentid="${
-                    comment.id
-                  }" data-commentupvotes="${comment.upvotes}">
-                    </div>
-                </div>
-              </div>
-            </article>`
-            );
+            document
+              .querySelector("#comments")
+              .insertAdjacentHTML("beforeend", renderComment(comment));
           });
 
           const event = new CustomEvent("renderedComments", {});
@@ -149,6 +123,96 @@
           console.error(e);
           document.querySelector("#error-message").classList.remove("hidden");
         }
+      };
+
+      const renderComment = (comment) => {
+        const { parentId, replies } = comment;
+
+        var repliesSnippet = "";
+        const isChild = parentId !== null;
+        const hasReplies = replies && replies.length > 0;
+        if (!isChild && hasReplies) {
+          replies.map(function (reply) {
+            repliesSnippet += renderComment(reply); // recursively render replies
+          });
+        }
+
+        return `<article data-commentid=${comment.id} class="${
+          isChild && "mt-8"
+        } ml-4 flex items-start ${hasReplies && "border-l border-[#E5E5E5]"}">
+                <img src="${
+                  comment.avatarURL
+                    ? comment.avatarURL
+                    : "https://www.gravatar.com/avatar/?d=mp"
+                }" class="h-9 w-9 rounded-full" style="transform: translate(calc(-50%), var(--tw-translate-y));"/>
+                <div id="comment-${comment.id}" class="-ml-1 w-full">
+                  <div class="flex items-center space-x-2">
+                    <h2 class="text-sm font-semibold">${
+                      comment.name ? comment.name : "Anonymous"
+                    }</h2>
+                    <span class="text-xs text-[#4B587C]">
+                      &bull;
+                    </span>
+                    <span class="text-xs text-[#4B587C]">${
+                      comment.createdAt
+                        ? moment(comment.createdAt).fromNow()
+                        : "Unknown time"
+                    }</span>
+                  </div>
+                  
+                  <p class="mt-1 text-sm">${
+                    comment.content ? comment.content : "Nothing to see here 👀"
+                  }</p>
+      
+                  <div class="mt-4 flex items-center text-xs text-[#4B587C]">
+                    <div class="upvotes-container" data-commentid="${
+                      comment.id
+                    }" data-commentupvotes="${comment.upvotes}">
+                    </div>
+                    <button id="reply-button-${
+                      comment.id
+                    }" onClick={addReplyBox(this)} data-commentid="${
+          isChild ? parentId : comment.id
+        }" data-name=${
+          comment.name
+        }"" class="ml-6 font-medium hover:text-black">Reply</button>
+                  </div>
+                  ${repliesSnippet}
+                </div>
+              </article>`;
+      };
+
+      const addReplyBox = (button) => {
+        const commentId = button.dataset.commentid;
+        const name = button.dataset.name;
+
+        const replyForm = document.querySelector(`#reply-form-${commentId}`);
+        if (replyForm) {
+          button.innerHTML = "Reply";
+          replyForm.remove();
+          return;
+        }
+
+        button.innerHTML = "Cancel";
+        document.querySelector(`#comment-${commentId}`).insertAdjacentHTML(
+          "beforeend",
+          `<form id="reply-form-${commentId}" action="/api/comments" method="POST" class="mt-6 flex items-center text-xs">
+              <input type="hidden" name="name" value="${fakeName}" />
+              <input
+                type="hidden"
+                name="avatarURL"
+                value="${fakePhoto}"
+              />
+              <input type="hidden" name="parentId" value="${commentId}">
+              <input type="text" name="content" required placeholder="Reply to ${name}.." class="flex-grow py-2 px-3 font-medium border-[1px] border-[#E5E5E5] rounded-[4px] placeholder-[#8A8F9C]">
+              <button type="submit" class="ml-3 py-2 px-4 bg-[#7E34F6] text-white font-bold rounded-[4px] hover:bg-[#701bfa]">
+                Reply
+              </button>
+            </form>`
+        );
+        document
+          .querySelector(`#reply-form-${commentId} input[type="text"]`)
+          .focus();
       };
     </script>
 

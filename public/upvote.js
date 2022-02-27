@@ -45,7 +45,7 @@ var Upvote = function Upvote(_ref) {
     }).then(function (data) {
       var newUpvotes = data.upvotes;
 
-      setUpvotes(newUpvotes);
+      setUpvotes(newUpvotes); // optimistic update
       setUpvoted(!upvoted);
     }).catch(function (e) {
       console.error(e);
@@ -59,8 +59,9 @@ var Upvote = function Upvote(_ref) {
     React.createElement(
       "button",
       {
+        id: "upvote-" + id,
         type: "submit",
-        className: "flex items-center " + (upvoted ? "text-indigo-600 hover:text-indigo-900" : "hover:text-black")
+        className: "flex items-center font-medium " + (upvoted ? "text-indigo-600 hover:text-indigo-900" : "hover:text-black")
       },
       React.createElement(
         "span",

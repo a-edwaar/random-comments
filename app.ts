@@ -21,7 +21,14 @@ GET /api/comments - Get all comments
 app.get(
   "/api/comments",
   async (_req: express.Request, res: express.Response) => {
-    const comments = await db.comment.findMany();
+    const comments = await db.comment.findMany({
+      where: {
+        parentId: null,
+      },
+      include: {
+        replies: true,
+      },
+    });
     res.send(comments);
   }
 );
@@ -32,7 +39,7 @@ POST /api/comments - Create a new comment
 app.post(
   "/api/comments",
   async (req: express.Request, res: express.Response) => {
-    const { name, avatarURL, content } = req.body;
+    const { name, avatarURL, content, parentId } = req.body;
     if (
       typeof name !== "string" ||
       typeof avatarURL !== "string" ||
@@ -46,6 +53,7 @@ app.post(
           name,
           avatarURL,
           content,
+          parentId,
         },
       });
       console.log(`New comment with id: ${comment.id}`);

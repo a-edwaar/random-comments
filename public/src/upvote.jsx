@@ -44,8 +44,9 @@ const Upvote = ({ id, commentUpvotes }) => {
   return (
     <form onSubmit={onFormSubmit}>
       <button
+        id={`upvote-${id}`}
         type="submit"
-        className={`flex items-center ${
+        className={`flex items-center font-medium ${
           upvoted ? "text-indigo-600 hover:text-indigo-900" : "hover:text-black"
         }`}
       >
